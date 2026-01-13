@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         OPENWEATHER_API_KEY = credentials('openweather-api-key')
-        GRAFANA_API_KEY = credentials('grafana-api-key')
     }
     
     options {
@@ -150,29 +149,35 @@ RABBITMQ_PASSWORD=admin123"""
     
     post {
         success {
-            script {
-                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                echo '✅ PIPELINE COMPLETED SUCCESSFULLY!'
-                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                sendGrafanaAnnotation('success', "Pipeline ${env.BUILD_NUMBER} succeeded")
+            node {
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '✅ PIPELINE COMPLETED SUCCESSFULLY!'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    sendGrafanaAnnotation('success', "Pipeline ${env.BUILD_NUMBER} succeeded")
+                }
             }
         }
         
         failure {
-            script {
-                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                echo '❌ PIPELINE FAILED!'
-                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                sendGrafanaAnnotation('failure', "Pipeline ${env.BUILD_NUMBER} failed")
+            node {
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '❌ PIPELINE FAILED!'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    sendGrafanaAnnotation('failure', "Pipeline ${env.BUILD_NUMBER} failed")
+                }
             }
         }
         
         always {
-            script {
-                sh 'mkdir -p logs || true'
-                sh 'docker-compose logs --tail=100 > logs/docker-compose.log || true'
-                archiveArtifacts artifacts: 'logs/*.log', allowEmptyArchive: true
-                sh 'docker system prune -f || true'
+            node {
+                script {
+                    sh 'mkdir -p logs || true'
+                    sh 'docker-compose logs --tail=100 > logs/docker-compose.log || true'
+                    archiveArtifacts artifacts: 'logs/*.log', allowEmptyArchive: true
+                    sh 'docker system prune -f || true'
+                }
             }
         }
     }
@@ -182,7 +187,7 @@ def sendGrafanaAnnotation(String status, String message) {
     try {
         def timestamp = new Date().getTime()
         sh """curl -X POST http://localhost:3000/api/annotations \
-            -H 'Authorization: Bearer ${env.GRAFANA_API_KEY}' \
+            -u admin:admin123 \
             -H 'Content-Type: application/json' \
             -d '{"text": "${message}", "tags": ["jenkins", "${status}"], "time": ${timestamp}}' \
             || echo 'Grafana annotation failed'"""
