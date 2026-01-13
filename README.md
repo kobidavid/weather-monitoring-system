@@ -1,700 +1,366 @@
-# Weather Monitoring System 🌤️
+# 🌤️ Weather Monitoring System
 
-A comprehensive weather monitoring system that samples OpenWeatherMap API, processes data through an ELK stack, and visualizes metrics in Grafana with automated alerts.
+Real-time weather monitoring system with automated data collection, processing, and visualization.
 
-## 📋 Table of Contents
+![CI/CD](https://github.com/YOUR_USERNAME/weather-monitoring-system/actions/workflows/ci-cd.yml/badge.svg)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://www.docker.com/)
 
-- [Project Overview](#project-overview)
-- [Architecture](#architecture)
-- [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Detailed Setup](#detailed-setup)
-- [CI/CD Pipeline](#cicd-pipeline)
-- [Grafana Dashboards & Alerts](#grafana-dashboards--alerts)
-- [Testing](#testing)
-- [Challenges & Solutions](#challenges--solutions)
-- [Project Structure](#project-structure)
-- [API Documentation](#api-documentation)
-- [Troubleshooting](#troubleshooting)
-- [Future Enhancements](#future-enhancements)
+---
 
-## 🎯 Project Overview
+## 🎯 Features
 
-This project implements a complete weather monitoring solution that:
-- Samples weather data from OpenWeatherMap API every hour
-- Sends data to RabbitMQ message queue
-- Processes data through Logstash with **millisecond-precision timestamps**
-- Stores data in Elasticsearch
-- Visualizes data in Grafana with real-time dashboards
-- Triggers alerts when temperature exceeds thresholds (< 0°C or > 24°C)
-- Implements full CI/CD pipeline with Jenkins
-- Supports GitHub webhook for automatic deployments
+- ✅ **Real-time Data Collection** - Fetches weather data from OpenWeatherMap API
+- ✅ **Message Queue** - RabbitMQ for reliable data streaming
+- ✅ **Data Pipeline** - Logstash for processing and transformation
+- ✅ **Storage** - Elasticsearch for time-series data
+- ✅ **Visualization** - Grafana dashboards with 9 panels
+- ✅ **CI/CD** - Automated testing with GitHub Actions
+- ✅ **Docker Compose** - One-command deployment
 
-**City Monitored**: Tokyo (configurable via environment variable)
+---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────┐
-│ OpenWeatherMap  │
-│      API        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│    Weather      │
-│    Monitor      │
-│   (Python App)  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│    RabbitMQ     │
-│  Message Queue  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│    Logstash     │
-│  (Processing)   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Elasticsearch   │
-│   (Storage)     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│    Grafana      │
-│ (Visualization) │
-└─────────────────┘
+Weather API → Python App → RabbitMQ → Logstash → Elasticsearch → Grafana
+                   ↓
+              Unit Tests
+                   ↓
+            GitHub Actions (CI/CD)
 ```
 
-## ✨ Features
+### Components:
 
-### Core Features
-- ⏰ **Hourly Sampling**: Automatically samples weather data every hour
-- 🎯 **Millisecond Precision**: Tracks exact sampling time in milliseconds
-- 📊 **Real-time Monitoring**: Live dashboards with 30-second refresh
-- 🚨 **Smart Alerts**: Temperature-based alerts (<0°C and >24°C)
-- 📦 **Message Queue**: RabbitMQ for reliable data delivery
-- 🔍 **ELK Stack**: Complete Elasticsearch, Logstash, Kibana pipeline
-- 🐳 **Containerized**: Everything runs in Docker containers
+| Service | Technology | Purpose |
+|---------|-----------|---------|
+| **Data Collector** | Python 3.11 | Fetch weather data |
+| **Message Queue** | RabbitMQ 3.12 | Data streaming |
+| **Pipeline** | Logstash 8.11 | Data processing |
+| **Storage** | Elasticsearch 8.11 | Time-series DB |
+| **Dashboard** | Grafana 10.2 | Visualization |
+| **CI/CD** | GitHub Actions | Automated testing |
 
-### Advanced Features
-- 🔄 **CI/CD Pipeline**: Full Jenkins pipeline with parallel stages
-- 🪝 **GitHub Webhook**: Automatic deployments on git push
-- ✅ **Unit Tests**: Comprehensive test coverage with pytest
-- 📈 **Performance Metrics**: Processing latency tracking
-- 🔐 **Secure**: Environment-based configuration management
-
-## 📦 Prerequisites
-
-### Required Software
-- Docker (version 20.10+)
-- Docker Compose (version 2.0+)
-- Git
-- Jenkins (for CI/CD)
-- Python 3.11+ (for local development)
-
-### API Keys
-- **OpenWeatherMap API Key**: Get yours at https://openweathermap.org/api
-  - Free tier includes 1,000 calls/day (more than enough for hourly sampling)
+---
 
 ## 🚀 Quick Start
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/weather-monitoring.git
-cd weather-monitoring
-```
+### Prerequisites
 
-### 2. Configure Environment
+- Docker Desktop installed
+- OpenWeatherMap API key ([Get one free](https://openweathermap.org/api))
+- Git
+
+### Installation (2 minutes)
+
 ```bash
-# Copy the example environment file
+# 1. Clone repository
+git clone https://github.com/YOUR_USERNAME/weather-monitoring-system.git
+cd weather-monitoring-system
+
+# 2. Configure environment
 cp .env.example .env
+nano .env  # Add your OPENWEATHER_API_KEY
 
-# Edit .env and add your OpenWeatherMap API key
-# OPENWEATHER_API_KEY=your_actual_api_key_here
-# CITY_NAME=Tokyo
-```
-
-### 3. Start All Services
-```bash
+# 3. Start all services
 docker-compose up -d
+
+# 4. Wait for services (60 seconds)
+sleep 60
 ```
 
-### 4. Access Services
-
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| Grafana | http://localhost:3000 | admin / admin123 |
-| RabbitMQ Management | http://localhost:15672 | admin / admin123 |
-| Elasticsearch | http://localhost:9200 | No auth |
-
-### 5. View Dashboard
-
-1. Open Grafana at http://localhost:3000
-2. Login with admin/admin123
-3. Navigate to "Weather Monitoring Dashboard"
-4. Watch real-time weather data flow in!
-
-## 🔧 Detailed Setup
-
-### Environment Variables
-
-Create a `.env` file with the following variables:
+### Verify Installation
 
 ```bash
-# Required
-OPENWEATHER_API_KEY=your_api_key_here
-CITY_NAME=Tokyo
+# Check services
+docker-compose ps
 
-# Optional (defaults provided)
-RABBITMQ_HOST=rabbitmq
-RABBITMQ_PORT=5672
-RABBITMQ_QUEUE=weather_data
-RABBITMQ_USER=admin
-RABBITMQ_PASSWORD=admin123
+# Check data
+curl http://localhost:9200/weather-data-*/_count
+
+# Open Grafana
+open http://localhost:3000  # Login: admin/admin123
 ```
 
-### Docker Compose Services
+---
 
-The stack includes:
+## 📊 Dashboard
 
-1. **RabbitMQ**: Message broker
-   - Ports: 5672 (AMQP), 15672 (Management UI)
-   - Volume: rabbitmq_data
+Access Grafana at **http://localhost:3000** (admin/admin123)
 
-2. **Elasticsearch**: Data storage
-   - Port: 9200, 9300
-   - Volume: elasticsearch_data
-   - Memory: 512MB
+### Available Panels:
 
-3. **Logstash**: Data processing
-   - Ports: 5044, 9600
-   - Consumes from RabbitMQ
-   - Outputs to Elasticsearch
+1. **Current Temperature** - Real-time temperature gauge
+2. **Humidity** - Current humidity level
+3. **Pressure** - Atmospheric pressure
+4. **Wind Speed** - Current wind speed
+5. **Temperature Trend** - 24-hour temperature graph
+6. **Humidity Trend** - 24-hour humidity graph
+7. **Pressure Trend** - 24-hour pressure graph
+8. **Weather Conditions** - Current conditions table
+9. **Data Freshness** - Last update indicator
 
-4. **Weather Monitor App**: Python application
-   - Samples API hourly
-   - Sends to RabbitMQ
-
-5. **Grafana**: Visualization
-   - Port: 3000
-   - Pre-configured dashboards
-   - Temperature alerts
-
-### Manual Build & Run
-
-```bash
-# Build the weather monitor app
-docker build -t weather-monitor .
-
-# Run individual services
-docker-compose up rabbitmq -d
-docker-compose up elasticsearch -d
-docker-compose up logstash -d
-docker-compose up weather-monitor -d
-docker-compose up grafana -d
-```
+---
 
 ## 🔄 CI/CD Pipeline
 
-### Pipeline Stages
+Automated testing runs on every push via GitHub Actions.
 
-The Jenkins pipeline includes:
+### Pipeline Stages:
 
-1. **Clone Repository**: Checkout code from GitHub
-2. **Parallel Build & Test**:
-   - Build Docker images
-   - Run linting (pylint, flake8)
-3. **Unit Tests**: Run pytest with coverage report
-4. **Deploy**: Deploy with docker-compose
-5. **Integration Tests**: Verify all services are healthy
-6. **Smoke Tests** (Parallel):
-   - Test RabbitMQ
-   - Test Elasticsearch
-   - Test Grafana
+| Stage | What It Does | Duration |
+|-------|-------------|----------|
+| **Lint** | Code quality (pylint, flake8) | ~1 min |
+| **Test** | 8 unit tests + coverage | ~1 min |
+| **Build** | Docker image build | ~2 min |
+| **Integration** | Service integration tests | ~2 min |
 
-### Setting Up Jenkins
+**Total: ~5 minutes per run**
 
-1. **Install Jenkins Plugins**:
-   - Docker Pipeline
-   - GitHub Integration
-   - HTML Publisher (for coverage reports)
+View results: [Actions Tab](https://github.com/YOUR_USERNAME/weather-monitoring-system/actions)
 
-2. **Create Pipeline Job**:
-   ```groovy
-   pipeline {
-       agent any
-       stages {
-           stage('Checkout') {
-               steps {
-                   git 'https://github.com/yourusername/weather-monitoring.git'
-               }
-           }
-       }
-   }
-   ```
+---
 
-3. **Configure Credentials**:
-   - Add `openweather-api-key` credential
-   - Add `grafana-api-key` credential
+## 🛠️ Development
 
-4. **Enable Webhook**:
-   - Configure GitHub webhook to trigger builds
-   - See `webhook-setup.sh` for detailed instructions
+### Project Structure
 
-### GitHub Webhook Setup
+```
+weather-monitoring-system/
+├── .github/workflows/      # CI/CD configuration
+├── grafana/               # Dashboard configs
+├── logstash/              # Pipeline configs
+├── tests/                 # Unit tests
+├── docker-compose.yml     # Service orchestration
+├── Dockerfile             # Weather monitor image
+├── weather_monitor.py     # Main application
+├── requirements.txt       # Python dependencies
+└── .env                   # Environment variables
+```
 
-1. Go to your repository: **Settings > Webhooks**
-2. Add webhook:
-   - **Payload URL**: `http://your-jenkins-url/github-webhook/`
-   - **Content type**: `application/json`
-   - **Events**: Push events
-3. Save and test
-
-## 📊 Grafana Dashboards & Alerts
-
-### Dashboard Panels
-
-The Weather Monitoring Dashboard includes:
-
-1. **Current Temperature Gauge**
-   - Color-coded thresholds
-   - Blue (<0°C), Green (0-15°C), Yellow (15-24°C), Red (>24°C)
-
-2. **Temperature Over Time**
-   - Line chart with historical data
-   - Threshold markers at 0°C and 24°C
-
-3. **Humidity Gauge**
-   - Current humidity percentage
-
-4. **Atmospheric Pressure**
-   - Pressure in hPa
-
-5. **Wind Speed**
-   - Current wind speed in m/s
-
-6. **Cloud Coverage**
-   - Percentage of cloud cover
-
-7. **Weather Conditions Distribution**
-   - Pie chart showing weather type frequencies
-
-8. **Processing Latency**
-   - Millisecond-precision latency tracking
-   - End-to-end monitoring
-
-9. **Temperature vs Feels Like**
-   - Comparison chart
-
-### Alert Configuration
-
-**Temperature Alerts**:
-
-- **Cold Alert**: Triggers when temperature < 0°C
-  - Evaluation: Every 1 minute
-  - Duration: 5 minutes
-  - Severity: Warning
-
-- **Hot Alert**: Triggers when temperature > 24°C
-  - Evaluation: Every 1 minute
-  - Duration: 5 minutes
-  - Severity: Warning
-
-### Configuring Alert Channels
-
-1. Go to **Grafana > Alerting > Contact Points**
-2. Add notification channel (Email, Slack, etc.)
-3. Link to alert rules in `grafana/provisioning/alerting/alerts.yml`
-
-## 🧪 Testing
-
-### Running Unit Tests
+### Run Tests Locally
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt --break-system-packages
+pip install -r requirements.txt
+pip install pytest pytest-cov
 
 # Run tests
-pytest tests/ -v
+pytest tests/ -v --cov=weather_monitor
 
-# Run with coverage
-pytest tests/ -v --cov=weather_monitor --cov-report=html
-
-# View coverage report
-open htmlcov/index.html
+# Run linting
+pylint weather_monitor.py
+flake8 weather_monitor.py
 ```
 
-### Test Coverage
-
-Current test coverage:
-- `weather_monitor.py`: 85%
-- Critical functions: 100%
-
-### Integration Testing
+### Make Changes
 
 ```bash
-# Test RabbitMQ
-curl -u admin:admin123 http://localhost:15672/api/queues
+# 1. Make your changes
+vim weather_monitor.py
 
-# Test Elasticsearch
-curl http://localhost:9200/_cat/indices?v
+# 2. Restart service
+docker-compose restart weather-monitor
 
-# Test Grafana
-curl http://localhost:3000/api/health
+# 3. View logs
+docker logs weather-monitor-app -f
 
-# Verify data flow
-curl "http://localhost:9200/weather-data-*/_search?size=1&sort=@timestamp:desc"
+# 4. Test locally
+pytest tests/
+
+# 5. Commit and push
+git add .
+git commit -m "Your changes"
+git push origin main
+
+# 6. GitHub Actions will automatically test
 ```
 
-## 💡 Challenges & Solutions
+---
 
-### Challenge 1: Millisecond Precision Timestamps
+## ⚙️ Configuration
 
-**Problem**: Need to track exact sampling time in milliseconds for accurate latency measurements.
+### Environment Variables
 
-**Solution**: 
-- Used `datetime.now().timestamp() * 1000` to get milliseconds
-- Stored as `timestamp_ms` field
-- Logstash converts to `@timestamp` using `UNIX_MS` format
-- Added processing_timestamp_ms to measure latency
-- Calculated processing_latency_ms as difference
+Edit `.env` file:
 
-**Code**:
+```bash
+# Required
+OPENWEATHER_API_KEY=your_api_key_here    # From openweathermap.org
+
+# Optional
+CITY_NAME=Tokyo                           # City to monitor
+SAMPLING_INTERVAL=3600                    # Seconds between samples
+RABBITMQ_USER=admin                       # RabbitMQ username
+RABBITMQ_PASSWORD=admin123                # RabbitMQ password
+```
+
+### Sampling Interval
+
+- **3600** (1 hour) - Recommended for free tier
+- **60** (1 minute) - For testing (uses more API calls)
+
+Free tier limit: 1,000 calls/day
+
+---
+
+## 📚 API Documentation
+
+### Weather Monitor
+
+The main application (`weather_monitor.py`) runs on schedule:
+
 ```python
-timestamp_ms = int(datetime.now().timestamp() * 1000)
-```
+# Fetch weather data
+GET https://api.openweathermap.org/data/2.5/weather
 
-### Challenge 2: RabbitMQ Connection Reliability
-
-**Problem**: Weather monitor couldn't connect to RabbitMQ on startup due to service initialization delays.
-
-**Solution**:
-- Implemented retry mechanism (5 attempts with 5-second delays)
-- Added health checks in docker-compose
-- Used depends_on with condition: service_healthy
-
-**Learning**: Always implement connection retry logic and health checks in microservices.
-
-### Challenge 3: Logstash Pipeline Configuration
-
-**Problem**: Initial pipeline didn't preserve timestamp precision and had parsing issues.
-
-**Solution**:
-- Used `codec => "json"` in RabbitMQ input
-- Added date filter to parse timestamp_ms correctly
-- Used Ruby filter for latency calculation
-- Ensured numeric field type conversions
-
-**Key Configuration**:
-```ruby
-date {
-  match => ["timestamp_ms", "UNIX_MS"]
-  target => "@timestamp"
-}
-```
-
-### Challenge 4: Grafana Dashboard Auto-Provisioning
-
-**Problem**: Dashboards needed manual configuration after each deployment.
-
-**Solution**:
-- Created JSON dashboard definition
-- Used Grafana provisioning system
-- Mounted dashboard files as volumes
-- Auto-configured datasource
-
-**Result**: Complete "infrastructure as code" - no manual setup required!
-
-### Challenge 5: Jenkins Pipeline Parallel Stages
-
-**Problem**: Build and test stages took too long sequentially.
-
-**Solution**:
-- Implemented parallel stages for build and lint
-- Parallel smoke tests for each service
-- Reduced pipeline time by 40%
-
-**Code**:
-```groovy
-stage('Parallel Build & Test') {
-    parallel {
-        stage('Build Docker Images') { ... }
-        stage('Lint & Static Analysis') { ... }
-    }
-}
-```
-
-### Challenge 6: Docker Compose Service Dependencies
-
-**Problem**: Services started before dependencies were ready, causing failures.
-
-**Solution**:
-- Implemented comprehensive health checks
-- Used `depends_on` with `condition: service_healthy`
-- Added startup delays where needed
-
-**Learning**: Health checks are essential for reliable container orchestration.
-
-### Challenge 7: API Rate Limiting
-
-**Problem**: Concerned about hitting OpenWeatherMap API limits.
-
-**Solution**:
-- Hourly sampling (24 calls/day) well within free tier (1000/day)
-- Implemented error handling for rate limit responses
-- Added retry logic with exponential backoff
-
-### Challenge 8: Elasticsearch Index Management
-
-**Problem**: Single index would grow infinitely.
-
-**Solution**:
-- Daily index pattern: `weather-data-YYYY.MM.dd`
-- Allows easy data retention policies
-- Better query performance
-
-**Configuration**:
-```ruby
-index => "weather-data-%{+YYYY.MM.dd}"
-```
-
-## 📁 Project Structure
-
-```
-weather-monitoring/
-├── README.md                           # This file
-├── docker-compose.yml                  # All services definition
-├── Dockerfile                          # Weather monitor app image
-├── requirements.txt                    # Python dependencies
-├── weather_monitor.py                  # Main application
-├── Jenkinsfile                         # CI/CD pipeline
-├── .env.example                        # Environment template
-├── .gitignore                          # Git ignore rules
-├── webhook-setup.sh                    # Webhook setup guide
-│
-├── tests/                              # Unit tests
-│   ├── __init__.py
-│   └── test_weather_monitor.py
-│
-├── logstash/                           # Logstash configuration
-│   ├── config/
-│   │   └── logstash.yml
-│   └── pipeline/
-│       └── weather.conf
-│
-└── grafana/                            # Grafana configuration
-    ├── provisioning/
-    │   ├── datasources/
-    │   │   └── elasticsearch.yml
-    │   ├── dashboards/
-    │   │   └── dashboards.yml
-    │   └── alerting/
-    │       └── alerts.yml
-    └── dashboards/
-        └── weather-dashboard.json
-```
-
-## 📖 API Documentation
-
-### OpenWeatherMap API
-
-**Endpoint**: `http://api.openweathermap.org/data/2.5/weather`
-
-**Parameters**:
-- `q`: City name (e.g., "Tokyo")
-- `appid`: Your API key
-- `units`: "metric" for Celsius
-
-**Response Fields Used**:
-- Temperature, feels_like, temp_min, temp_max
-- Pressure, humidity
-- Wind speed and direction
-- Cloud coverage
-- Weather condition
-- Visibility
-- Sunrise/sunset times
-
-**Example**:
-```bash
-curl "http://api.openweathermap.org/data/2.5/weather?q=Tokyo&appid=YOUR_KEY&units=metric"
-```
-
-### RabbitMQ Queue Structure
-
-**Queue Name**: `weather_data`
-
-**Message Format**:
-```json
+# Process and send to RabbitMQ
 {
-  "timestamp_ms": 1705149600000,
-  "timestamp": "2024-01-13T12:00:00",
-  "city": "Tokyo",
-  "country": "JP",
-  "temperature": 15.5,
-  "feels_like": 14.2,
-  "pressure": 1013,
-  "humidity": 65,
-  "weather": "Clear",
-  "wind_speed": 3.5,
-  ...
+    "city": "Tokyo",
+    "temperature": 15.5,
+    "humidity": 65,
+    "pressure": 1013,
+    "wind_speed": 3.2,
+    "weather": "Clear",
+    "timestamp": "2025-01-13T12:00:00Z"
 }
 ```
 
-### Elasticsearch Index
+### Service Endpoints
 
-**Index Pattern**: `weather-data-YYYY.MM.dd`
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Grafana | http://localhost:3000 | admin/admin123 |
+| RabbitMQ | http://localhost:15672 | admin/admin123 |
+| Elasticsearch | http://localhost:9200 | None |
 
-**Document Structure**:
-```json
-{
-  "@timestamp": "2024-01-13T12:00:00.123Z",
-  "timestamp_ms": 1705149600123,
-  "processing_timestamp_ms": 1705149600234,
-  "processing_latency_ms": 111,
-  "temperature": 15.5,
-  "city": "Tokyo",
-  ...
-}
-```
+---
 
-## 🔍 Troubleshooting
+## 🐛 Troubleshooting
 
 ### Services Won't Start
 
 ```bash
-# Check service status
-docker-compose ps
+# Check logs
+docker-compose logs
 
-# View logs
-docker-compose logs -f [service_name]
-
-# Restart specific service
-docker-compose restart [service_name]
+# Restart everything
+docker-compose down -v
+docker-compose up -d
 ```
 
-### No Data in Grafana
-
-1. Check weather monitor logs:
-   ```bash
-   docker-compose logs weather-monitor
-   ```
-
-2. Verify RabbitMQ queue:
-   - Open http://localhost:15672
-   - Check "weather_data" queue has messages
-
-3. Check Elasticsearch indices:
-   ```bash
-   curl http://localhost:9200/_cat/indices?v
-   ```
-
-### API Key Issues
+### No Data in Dashboard
 
 ```bash
-# Verify API key is set
-docker-compose exec weather-monitor env | grep OPENWEATHER_API_KEY
+# Check weather monitor
+docker logs weather-monitor-app
 
-# Test API key manually
-curl "http://api.openweathermap.org/data/2.5/weather?q=Tokyo&appid=YOUR_KEY&units=metric"
+# Check Elasticsearch
+curl http://localhost:9200/weather-data-*/_search?size=1
+
+# Verify API key
+curl "http://api.openweathermap.org/data/2.5/weather?q=Tokyo&appid=YOUR_KEY"
 ```
 
-### Jenkins Pipeline Fails
+### Port Conflicts
 
-1. Check Jenkins console output
-2. Verify credentials are configured
-3. Ensure Docker is accessible from Jenkins
-4. Check webhook configuration
+```bash
+# Check what's using ports
+lsof -i :3000   # Grafana
+lsof -i :9200   # Elasticsearch
+lsof -i :15672  # RabbitMQ
 
-## 🚀 Future Enhancements
+# Stop conflicting services
+```
 
-### Planned Features
-
-1. **Multi-City Monitoring**
-   - Monitor multiple cities simultaneously
-   - Comparative dashboards
-
-2. **Weather Forecasting**
-   - Integrate 5-day forecast API
-   - Predictive analytics
-
-3. **Advanced Alerts**
-   - Severe weather warnings
-   - Custom alert conditions
-   - Multiple notification channels
-
-4. **Data Analysis**
-   - Historical trend analysis
-   - Machine learning predictions
-   - Anomaly detection
-
-5. **Performance Optimization**
-   - Caching layer with Redis
-   - Data aggregation for long-term storage
-   - Index lifecycle management
-
-6. **Monitoring & Observability**
-   - Prometheus metrics
-   - Distributed tracing
-   - APM integration
-
-7. **Security Enhancements**
-   - HTTPS everywhere
-   - Secret management with Vault
-   - Network policies
-
-## 📝 Notes
-
-### Design Decisions
-
-1. **Hourly Sampling**: Balances data freshness with API limits
-2. **Tokyo Selection**: Popular travel destination with interesting weather patterns
-3. **ELK Stack**: Industry-standard for log aggregation and analysis
-4. **RabbitMQ**: Reliable message broker with excellent Docker support
-5. **Docker Compose**: Simple deployment for single-host setups
-
-### Performance Considerations
-
-- Elasticsearch limited to 512MB RAM (adjust for production)
-- Logstash processes data in near real-time (<1 second latency)
-- RabbitMQ queue handles backpressure automatically
-- Grafana dashboards auto-refresh every 30 seconds
-
-## 🤝 Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Update documentation
-6. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👨‍💻 Author
-
-Created as part of a DevOps/SRE training project.
-
-## 🙏 Acknowledgments
-
-- OpenWeatherMap for the free API
-- Elastic Stack team for excellent documentation
-- Docker community for containerization tools
-- Grafana team for visualization platform
+See [COMPLETE_SETUP_GUIDE.md](COMPLETE_SETUP_GUIDE.md) for more troubleshooting.
 
 ---
 
-**Questions?** Open an issue or contact the maintainer.
+## 🧪 Testing
 
-**Happy Monitoring! 🌤️📊**
+### Unit Tests
+
+```bash
+pytest tests/ -v
+```
+
+8 tests covering:
+- Weather API integration
+- Data validation
+- RabbitMQ messaging
+- Configuration handling
+
+### Coverage
+
+```bash
+pytest tests/ --cov=weather_monitor --cov-report=html
+open htmlcov/index.html
+```
+
+Current coverage: **85%+**
+
+---
+
+## 📦 Deployment
+
+### Docker Compose (Recommended)
+
+```bash
+docker-compose up -d
+```
+
+### Manual Deployment
+
+```bash
+# Build image
+docker build -t weather-monitor:latest .
+
+# Run with environment
+docker run -d \
+  --name weather-monitor \
+  --network weather-network \
+  --env-file .env \
+  weather-monitor:latest
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing`)
+5. Open Pull Request
+
+GitHub Actions will automatically test your changes!
+
+---
+
+## 📄 License
+
+MIT License - see [LICENSE](LICENSE) file for details
+
+---
+
+## 🙏 Acknowledgments
+
+- [OpenWeatherMap](https://openweathermap.org/) - Weather data API
+- [RabbitMQ](https://www.rabbitmq.com/) - Message queue
+- [Elastic Stack](https://www.elastic.co/) - Data pipeline & storage
+- [Grafana](https://grafana.com/) - Visualization
+- [Docker](https://www.docker.com/) - Containerization
+
+---
+
+## 📞 Support
+
+For issues or questions:
+- Open an [Issue](https://github.com/YOUR_USERNAME/weather-monitoring-system/issues)
+- Check [COMPLETE_SETUP_GUIDE.md](COMPLETE_SETUP_GUIDE.md)
+- View [CI/CD runs](https://github.com/YOUR_USERNAME/weather-monitoring-system/actions)
+
+---
+
+**Made with ❤️ and ☕**

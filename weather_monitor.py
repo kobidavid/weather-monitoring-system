@@ -181,7 +181,7 @@ class WeatherMonitor:
         
         # Schedule hourly sampling
         scheduler = BlockingScheduler()
-        scheduler.add_job(self.sample_and_send, 'interval', hours=1)
+        scheduler.add_job(self.sample_and_send, 'interval', minutes=10)
         
         try:
             scheduler.start()
