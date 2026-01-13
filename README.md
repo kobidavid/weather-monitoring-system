@@ -2,7 +2,7 @@
 
 Real-time weather monitoring system with automated data collection, processing, and visualization.
 
-![CI/CD](https://github.com/YOUR_USERNAME/weather-monitoring-system/actions/workflows/ci-cd.yml/badge.svg)
+![CI/CD](https://github.com/kobidavid/weather-monitoring-system/actions/workflows/ci-cd.yml/badge.svg)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://www.docker.com/)
 
@@ -55,7 +55,7 @@ Weather API → Python App → RabbitMQ → Logstash → Elasticsearch → Grafa
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/YOUR_USERNAME/weather-monitoring-system.git
+git clone https://github.com/kobidavid/weather-monitoring-system.git
 cd weather-monitoring-system
 
 # 2. Configure environment
@@ -76,7 +76,7 @@ sleep 60
 docker-compose ps
 
 # Check data
-curl http://localhost:9200/weather-data-*/_count
+curl "http://localhost:9200/weather-data-*/_count"
 
 # Open Grafana
 open http://localhost:3000  # Login: admin/admin123
@@ -190,7 +190,6 @@ OPENWEATHER_API_KEY=your_api_key_here    # From openweathermap.org
 
 # Optional
 CITY_NAME=Tokyo                           # City to monitor
-SAMPLING_INTERVAL=3600                    # Seconds between samples
 RABBITMQ_USER=admin                       # RabbitMQ username
 RABBITMQ_PASSWORD=admin123                # RabbitMQ password
 ```
