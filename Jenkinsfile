@@ -149,35 +149,29 @@ RABBITMQ_PASSWORD=admin123"""
     
     post {
         success {
-            node {
-                script {
-                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                    echo '✅ PIPELINE COMPLETED SUCCESSFULLY!'
-                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                    sendGrafanaAnnotation('success', "Pipeline ${env.BUILD_NUMBER} succeeded")
-                }
+            script {
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                echo '✅ PIPELINE COMPLETED SUCCESSFULLY!'
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                sendGrafanaAnnotation('success', "Pipeline ${env.BUILD_NUMBER} succeeded")
             }
         }
         
         failure {
-            node {
-                script {
-                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                    echo '❌ PIPELINE FAILED!'
-                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-                    sendGrafanaAnnotation('failure', "Pipeline ${env.BUILD_NUMBER} failed")
-                }
+            script {
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                echo '❌ PIPELINE FAILED!'
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                sendGrafanaAnnotation('failure', "Pipeline ${env.BUILD_NUMBER} failed")
             }
         }
         
         always {
-            node {
-                script {
-                    sh 'mkdir -p logs || true'
-                    sh 'docker-compose logs --tail=100 > logs/docker-compose.log || true'
-                    archiveArtifacts artifacts: 'logs/*.log', allowEmptyArchive: true
-                    sh 'docker system prune -f || true'
-                }
+            script {
+                sh 'mkdir -p logs || true'
+                sh 'docker-compose logs --tail=100 > logs/docker-compose.log || true'
+                archiveArtifacts artifacts: 'logs/*.log', allowEmptyArchive: true
+                sh 'docker system prune -f || true'
             }
         }
     }
