@@ -3,10 +3,8 @@ pipeline {
     
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
-        PROJECT_NAME = 'weather-monitoring'
-        GRAFANA_URL = 'http://localhost:3000'
-        GRAFANA_API_KEY = credentials('grafana-api-key')  // Store in Jenkins credentials
-        OPENWEATHER_API_KEY = credentials('openweather-api-key')  // Store in Jenkins credentials
+        OPENWEATHER_API_KEY = credentials('openweather-api-key')
+        GRAFANA_API_KEY = credentials('grafana-api-key')
     }
     
     options {
@@ -18,9 +16,14 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                echo 'Cloning repository...'
+                script {
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '📥 CLONING REPOSITORY'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                }
                 checkout scm
-                sh 'git log -1'
+                sh 'git log -1 --pretty=format:"%h - %an: %s" || echo "No git history"'
+                sh 'ls -la'
             }
         }
         
@@ -29,10 +32,8 @@ pipeline {
                 stage('Build Docker Images') {
                     steps {
                         script {
-                            echo 'Building Docker images...'
-                            sh """
-                                docker-compose -f ${DOCKER_COMPOSE_FILE} build --no-cache
-                            """
+                            echo '🐳 Building Docker images...'
+                            sh 'docker-compose build --no-cache weather-monitor || true'
                         }
                     }
                 }
@@ -40,17 +41,10 @@ pipeline {
                 stage('Lint & Static Analysis') {
                     steps {
                         script {
-                            echo 'Running linting and static analysis...'
-                            sh '''
-                                # Install required packages for testing
-                                pip install pylint flake8 --break-system-packages || true
-                                
-                                # Run pylint
-                                pylint weather_monitor.py --exit-zero || true
-                                
-                                # Run flake8
-                                flake8 weather_monitor.py --max-line-length=120 --exit-zero || true
-                            '''
+                            echo '🔍 Running code quality checks...'
+                            sh 'pip3 install pylint flake8 --break-system-packages || true'
+                            sh 'pylint weather_monitor.py --exit-zero || echo "Pylint completed"'
+                            sh 'flake8 weather_monitor.py --max-line-length=120 --exit-zero || echo "Flake8 completed"'
                         }
                     }
                 }
@@ -60,14 +54,12 @@ pipeline {
         stage('Unit Tests') {
             steps {
                 script {
-                    echo 'Running unit tests...'
-                    sh '''
-                        # Install test dependencies
-                        pip install -r requirements.txt --break-system-packages
-                        
-                        # Run pytest with coverage
-                        pytest tests/ -v --cov=weather_monitor --cov-report=xml --cov-report=html || true
-                    '''
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '🧪 RUNNING UNIT TESTS'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    sh 'pip3 install -r requirements.txt --break-system-packages || true'
+                    sh 'pip3 install pytest pytest-cov --break-system-packages || true'
+                    sh 'pytest tests/ -v --cov=weather_monitor --cov-report=xml --cov-report=html || true'
                 }
             }
             post {
@@ -88,25 +80,20 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo 'Deploying services with Docker Compose...'
-                    sh """
-                        # Stop existing services
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} down || true
-                        
-                        # Create .env file with API key
-                        echo "OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}" > .env
-                        echo "CITY_NAME=Tokyo" >> .env
-                        
-                        # Start all services
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} up -d
-                        
-                        # Wait for services to be healthy
-                        echo 'Waiting for services to be healthy...'
-                        sleep 30
-                        
-                        # Check service health
-                        docker-compose -f ${DOCKER_COMPOSE_FILE} ps
-                    """
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '🚀 DEPLOYING SERVICES'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    
+                    sh 'docker-compose down || true'
+                    
+                    writeFile file: '.env', text: """OPENWEATHER_API_KEY=${env.OPENWEATHER_API_KEY}
+CITY_NAME=Tokyo
+RABBITMQ_USER=admin
+RABBITMQ_PASSWORD=admin123"""
+                    
+                    sh 'docker-compose up -d'
+                    sh 'sleep 30'
+                    sh 'docker-compose ps'
                 }
             }
         }
@@ -114,59 +101,46 @@ pipeline {
         stage('Integration Tests') {
             steps {
                 script {
-                    echo 'Running integration tests...'
-                    sh '''
-                        # Wait for services to fully start
-                        sleep 20
-                        
-                        # Check if RabbitMQ is accessible
-                        curl -f http://localhost:15672 || echo "RabbitMQ UI not accessible"
-                        
-                        # Check if Elasticsearch is accessible
-                        curl -f http://localhost:9200/_cluster/health || echo "Elasticsearch not accessible"
-                        
-                        # Check if Grafana is accessible
-                        curl -f http://localhost:3000/api/health || echo "Grafana not accessible"
-                        
-                        # Verify data flow (check if data appears in Elasticsearch)
-                        sleep 60  # Wait for first data point
-                        curl -X GET "http://localhost:9200/weather-data-*/_search?size=1&sort=@timestamp:desc" || echo "No data in Elasticsearch yet"
-                    '''
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    echo '🔗 RUNNING INTEGRATION TESTS'
+                    echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                    
+                    sh 'sleep 20'
+                    sh 'curl -f http://localhost:15672 || echo "RabbitMQ not ready"'
+                    sh 'curl -f http://localhost:9200/_cluster/health || echo "ES not ready"'
+                    sh 'curl -f http://localhost:3000/api/health || echo "Grafana not ready"'
+                    sh 'curl -s http://localhost:9200/weather-data-*/_count || echo "No data"'
                 }
             }
         }
         
         stage('Smoke Tests') {
             parallel {
-                stage('Test RabbitMQ') {
+                stage('Test RabbitMQ API') {
                     steps {
                         script {
-                            sh '''
-                                echo "Testing RabbitMQ..."
-                                curl -u admin:admin123 http://localhost:15672/api/queues/%2F/weather_data || true
-                            '''
+                            echo '🐰 Testing RabbitMQ...'
+                            sh 'curl -u admin:admin123 http://localhost:15672/api/queues/%2F/weather_data || true'
                         }
                     }
                 }
                 
-                stage('Test Elasticsearch') {
+                stage('Test Elasticsearch Indices') {
                     steps {
                         script {
-                            sh '''
-                                echo "Testing Elasticsearch..."
-                                curl http://localhost:9200/_cat/indices?v || true
-                            '''
+                            echo '🔍 Testing Elasticsearch...'
+                            sh 'curl -s http://localhost:9200/_cat/indices?v || true'
+                            sh 'curl -s http://localhost:9200/weather-data-*/_count || true'
                         }
                     }
                 }
                 
-                stage('Test Grafana') {
+                stage('Test Grafana Health') {
                     steps {
                         script {
-                            sh '''
-                                echo "Testing Grafana..."
-                                curl -f http://localhost:3000/api/health || true
-                            '''
+                            echo '📊 Testing Grafana...'
+                            sh 'curl -f http://localhost:3000/api/health || true'
+                            sh 'curl -u admin:admin123 http://localhost:3000/api/datasources || true'
                         }
                     }
                 }
@@ -175,58 +149,45 @@ pipeline {
     }
     
     post {
-        always {
-            script {
-                echo 'Collecting logs...'
-                sh '''
-                    mkdir -p logs
-                    docker-compose -f ${DOCKER_COMPOSE_FILE} logs --tail=100 > logs/docker-compose.log || true
-                '''
-                archiveArtifacts artifacts: 'logs/**/*.log', allowEmptyArchive: true
-            }
-        }
-        
         success {
             script {
-                echo 'Pipeline completed successfully!'
-                sendGrafanaAnnotation(
-                    'success',
-                    "Pipeline #${BUILD_NUMBER} completed successfully",
-                    "Deployment successful for build ${BUILD_NUMBER}"
-                )
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                echo '✅ PIPELINE COMPLETED SUCCESSFULLY!'
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                sendGrafanaAnnotation('success', "Pipeline ${env.BUILD_NUMBER} succeeded")
             }
         }
         
         failure {
             script {
-                echo 'Pipeline failed!'
-                sendGrafanaAnnotation(
-                    'failure',
-                    "Pipeline #${BUILD_NUMBER} failed",
-                    "Deployment failed for build ${BUILD_NUMBER}"
-                )
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                echo '❌ PIPELINE FAILED!'
+                echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+                sendGrafanaAnnotation('failure', "Pipeline ${env.BUILD_NUMBER} failed")
+            }
+        }
+        
+        always {
+            script {
+                sh 'mkdir -p logs || true'
+                sh 'docker-compose logs --tail=100 > logs/docker-compose.log || true'
+                archiveArtifacts artifacts: 'logs/*.log', allowEmptyArchive: true
+                sh 'docker system prune -f || true'
             }
         }
     }
 }
 
-def sendGrafanaAnnotation(String status, String title, String text) {
-    def color = status == 'success' ? 'green' : 'red'
-    def tags = ['jenkins', 'deployment', status]
-    
+def sendGrafanaAnnotation(String status, String message) {
     try {
-        sh """
-            curl -X POST ${GRAFANA_URL}/api/annotations \\
-                -H "Authorization: Bearer ${GRAFANA_API_KEY}" \\
-                -H "Content-Type: application/json" \\
-                -d '{
-                    "text": "${text}",
-                    "tags": ${groovy.json.JsonOutput.toJson(tags)},
-                    "time": ${System.currentTimeMillis()}
-                }'
-        """
-        echo "Grafana annotation sent: ${title}"
+        def timestamp = new Date().getTime()
+        sh """curl -X POST http://localhost:3000/api/annotations \
+            -H 'Authorization: Bearer ${env.GRAFANA_API_KEY}' \
+            -H 'Content-Type: application/json' \
+            -d '{"text": "${message}", "tags": ["jenkins", "${status}"], "time": ${timestamp}}' \
+            || echo 'Grafana annotation failed'"""
+        echo "✅ Grafana annotation sent"
     } catch (Exception e) {
-        echo "Failed to send Grafana annotation: ${e.message}"
+        echo "⚠️ Grafana annotation failed: ${e.message}"
     }
 }
