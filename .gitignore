@@ -1,50 +1,49 @@
-# Environment variables
-.env
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
+dist/
+build/
 
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-*.cover
-.hypothesis/
+# Virtual Environment
+venv/
+env/
+ENV/
 
-# IDEs
+# Environment Variables - NEVER COMMIT!
+.env
+.env.*
+.env.local
+.env.backup
+.env.bckp
+*.env
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # Docker
+.dockerignore
+
+# Logs
 *.log
+logs/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-logs/
-*.log
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+*.cover
+
+# Jenkins (if you had it)
+Dockerfile.jenkins*
+jenkins-casc.yaml
