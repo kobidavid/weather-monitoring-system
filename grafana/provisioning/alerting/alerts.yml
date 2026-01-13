@@ -1,0 +1,55 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: Weather Alerts
+    folder: Alerts
+    interval: 1m
+    rules:
+      - uid: cold_temperature_alert
+        title: Cold Temperature Alert
+        condition: A
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: elasticsearch
+            model:
+              expr: 'temperature{} < 0'
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: "Temperature has dropped below 0°C. Current temperature: {{ $values.A.Value }}°C"
+          summary: "⚠️ Cold Temperature Alert"
+        labels:
+          severity: warning
+          alert_type: temperature_low
+        
+      - uid: hot_temperature_alert
+        title: Hot Temperature Alert
+        condition: B
+        data:
+          - refId: B
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: elasticsearch
+            model:
+              expr: 'temperature{} > 24'
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: B
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          description: "Temperature has exceeded 24°C. Current temperature: {{ $values.B.Value }}°C"
+          summary: "🔥 Hot Temperature Alert"
+        labels:
+          severity: warning
+          alert_type: temperature_high

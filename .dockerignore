@@ -1,0 +1,63 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Virtual environments
+venv
+env
+ENV
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+.tox
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation
+README.md
+CONTRIBUTING.md
+QUICKSTART.md
+ARCHITECTURE.md
+docs/
+
+# CI/CD
+Jenkinsfile
+.github
+
+# Docker
+docker-compose*.yml
+Dockerfile
+.dockerignore
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.*
+
+# Other
+Makefile
+setup.sh
+health-check.sh
+webhook-setup.sh

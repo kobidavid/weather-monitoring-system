@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: weather-rabbitmq
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - weather-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: weather-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - weather-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: weather-logstash
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - weather-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Weather Monitor Application
+  weather-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weather-monitor-app
+    environment:
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+      CITY_NAME: ${CITY_NAME:-Tokyo}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_QUEUE: weather_data
+      RABBITMQ_USER: admin
+      RABBITMQ_PASSWORD: admin123
+    networks:
+      - weather-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Grafana
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: weather-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - weather-network
+    depends_on:
+      - elasticsearch
+
+  # Jenkins CI/CD Server
+  jenkins:
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    #container_name: weather-jenkins
+    #user: root
+    image: jenkins/jenkins:lts-jdk17
+    container_name: weather-jenkins
+    user: root
+    ports:
+      - "8080:8080"      # Jenkins UI
+      - "50000:50000"    # Jenkins agents
+    volumes:
+      - jenkins_data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock  # גישה ל-Docker
+    environment:
+      - JENKINS_OPTS=--prefix=/jenkins
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - weather-network
+    restart: unless-stopped
+
+networks:
+  weather-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+  elasticsearch_data:
+  grafana_data:
+  jenkins_data:

@@ -1,0 +1,33 @@
+# Docker Compose Override for Development
+# This file is automatically used when running docker-compose up
+# Use: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+
+version: '3.8'
+
+services:
+  # Weather Monitor - Development Configuration
+  weather-monitor:
+    environment:
+      # Enable debug logging
+      LOG_LEVEL: DEBUG
+    volumes:
+      # Mount code for live reload
+      - ./weather_monitor.py:/app/weather_monitor.py:ro
+    # Uncomment for interactive debugging
+    # stdin_open: true
+    # tty: true
+
+  # Elasticsearch - Development Configuration
+  elasticsearch:
+    environment:
+      # Reduce memory for development
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+
+  # Grafana - Development Configuration  
+  grafana:
+    environment:
+      # Enable development mode
+      - GF_LOG_LEVEL=debug
+    ports:
+      # Expose additional ports if needed
+      - "3000:3000"
