@@ -14,12 +14,9 @@ env/
 ENV/
 
 # Environment Variables - NEVER COMMIT!
-.env
-.env.*
 .env.local
 .env.backup
 .env.bckp
-*.env
 
 # IDE
 .vscode/
